@@ -255,7 +255,7 @@ for filetag in filetags:
     f.close()
     plot_path = os.path.join(predictions_dir, "{}_{}.png".format(filetag, tag_label))
     plot_results(predicted, y_test, plot_path)
-    print("Predicted using test data from {} in {} days {} hours {} minutes {} seconds".format(filetag,
+    print("Predicted using test data from {} in {:d} days {:d} hours {:d} minutes {:d} seconds".format(filetag,
                                             *convert_time(time.time() - start)))
 
 print("Creating archives")
@@ -268,7 +268,7 @@ predictions_zip = zipfile.ZipFile("{}_predictions.zip".format(tag_label), "w",
 zip_data(predictions_dir, predictions_zip)
 predictions_zip.close()
 
-print("DONE in {} days {} hours {} minutes {} seconds".format(*convert_time(time.time() - global_start)))
+print("DONE in {:d} days {:d} hours {:d} minutes {:d} seconds".format(*convert_time(time.time() - global_start)))
 
 
 
