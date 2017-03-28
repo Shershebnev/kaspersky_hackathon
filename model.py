@@ -189,6 +189,7 @@ def convert_time(seconds):
     Returns:
         seconds converted into the number of days, hours, minutes and seconds
     """
+    seconds = int(seconds)  # removing ms
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)
@@ -224,18 +225,18 @@ checkpoint = ModelCheckpoint(checkpoint_filepath, monitor = "val_loss",
 callbacks_list = [checkpoint]
 scaler = MinMaxScaler(feature_range = (0, 1), copy = True)
 
-# print("Loading training data")
+print("Loading training data")
 x_train, y_train, x_validation, y_validation = load_data("{}.csv".format(tag_label),
                                                          seq_len, scaler, True)
 
-# print("Fitting model")
+print("Fitting model")
 model = build_model([1, lstm_first, lstm_second, 1])
 model.fit(x_train, y_train, batch_size = batch_size, epochs = epochs,
           validation_split = 0.1, callbacks = callbacks_list, verbose = 2)
 # final save, just in case
 model.save(os.path.join(checkpoints_dir, "{}_final.h5".format(tag_label)))
 
-# print("Testing using validation set")
+print("Testing using validation set")
 predicted = predict(model, x_validation)
 plot_results(predicted, y_validation, "{}_validation.png".format(tag_label))
 
