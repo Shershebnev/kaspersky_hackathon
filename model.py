@@ -259,14 +259,15 @@ for filetag in filetags:
                                             *convert_time(time.time() - start)))
 
 print("Creating archives")
-checkpoints_zip = zipfile.ZipFile("checkpoints.zip", "w", zipfile.ZIP_DEFLATED)
+checkpoints_zip = zipfile.ZipFile("{}_checkpoints.zip".format(tag_label), "w",
+                                  zipfile.ZIP_DEFLATED)
 zip_data(checkpoints_dir, checkpoints_zip)
 checkpoints_zip.close()
-predictions_zip = zipfile.ZipFile("predictions.zip", "w", zipfile.ZIP_DEFLATED)
+predictions_zip = zipfile.ZipFile("{}_predictions.zip".format(tag_label), "w",
+                                  zipfile.ZIP_DEFLATED)
 zip_data(predictions_dir, predictions_zip)
 predictions_zip.close()
 
-final_time = time.time() - global_start
 print("DONE in {} days {} hours {} minutes {} seconds".format(*convert_time(time.time() - global_start)))
 
 
