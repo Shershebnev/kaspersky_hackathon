@@ -1,4 +1,5 @@
 import os
+import time
 import warnings
 import zipfile
 
@@ -179,6 +180,21 @@ def zip_data(path, zip_handler):
         for filename in files:
             zip_handler.write(os.path.join(root, filename))
 
+def convert_time(seconds):
+    """Converts time in seconds into days, hours, minutes and seconds
+
+    Args:
+        seconds: number of seconds
+
+    Returns:
+        seconds converted into the number of days, hours, minutes and seconds
+    """
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+    return days, hours, minutes, seconds
+
+global_start = time.time()
 train_file = "train.csv"
 if not os.path.isfile(train_file):
     print("Downloading data")
@@ -197,9 +213,11 @@ lstm_second = 100
 batch_size = 512
 
 tag_label = "tag00"
-if not os.path.isdir("checkpoints"):
-    os.mkdir("checkpoints")
-checkpoint_filepath = os.path.join("checkpoints",
+checkpoints_dir = "./checkpoints"
+predictions_dir = "./predictions"
+if not os.path.isdir(checkpoints_dir):
+    os.mkdir(checkpoints_dir)
+checkpoint_filepath = os.path.join(checkpoints_dir,
     tag_label + "_epoch_{epoch:02d}_val_loss_{val_loss:.5f}.h5")
 checkpoint = ModelCheckpoint(checkpoint_filepath, monitor = "val_loss",
                             verbose = 1, save_best_only = True, mode = "min")
@@ -215,37 +233,41 @@ model = build_model([1, lstm_first, lstm_second, 1])
 model.fit(x_train, y_train, batch_size = batch_size, epochs = epochs,
           validation_split = 0.1, callbacks = callbacks_list, verbose = 2)
 # final save, just in case
-model.save("checkpoints/{}_final.h5".format(tag_label))
+model.save(os.path.join(checkpoints_dir, "{}_final.h5".format(tag_label)))
 
 # print("Testing using validation set")
 predicted = predict(model, x_validation)
 plot_results(predicted, y_validation, "{}_validation.png".format(tag_label))
 
 print("Loading test data and making predictions")
-if not os.path.isdir("predictions/"):
-    os.mkdir("predictions/")
+if not os.path.isdir(predictions_dir):
+    os.mkdir(predictions_dir)
 filetags = parse_test_data(test_dir)
 for filetag in filetags:
+    start = time.time()
     print("Predicting using test data from {}".format(filetag))
     test_data_path = os.path.join(test_dir, filetag, "{}_{}.csv".format(filetag, tag_label))
     x_test, y_test = load_data(test_data_path, seq_len, scaler, False)
     predicted = predict(model, x_test)
-    pred_file = os.path.join("predictions", "{}_{}.txt".format(filetag, tag_label))
+    pred_file = os.path.join(predictions_dir, "{}_{}.txt".format(filetag, tag_label))
     f = open(pred_file, "w")
     f.write("{}\n".format("\n".join(map(str, predicted.tolist()))))
     f.close()
-    plot_path = os.path.join("predictions", "{}_{}.png".format(filetag, tag_label))
+    plot_path = os.path.join(predictions_dir, "{}_{}.png".format(filetag, tag_label))
     plot_results(predicted, y_test, plot_path)
+    print("Predicted using test data from {} in {} days {} hours {} minutes {} seconds".format(filetag,
+                                            *convert_time(time.time() - start)))
 
 print("Creating archives")
 checkpoints_zip = zipfile.ZipFile("checkpoints.zip", "w", zipfile.ZIP_DEFLATED)
-zip_data("./checkpoints/", checkpoints_zip)
+zip_data(checkpoints_dir, checkpoints_zip)
 checkpoints_zip.close()
 predictions_zip = zipfile.ZipFile("predictions.zip", "w", zipfile.ZIP_DEFLATED)
-zip_data("./predictions/", predictions_zip)
+zip_data(predictions_dir, predictions_zip)
 predictions_zip.close()
 
-print("DONE")
+final_time = time.time() - global_start
+print("DONE in {} days {} hours {} minutes {} seconds".format(*convert_time(time.time() - global_start)))
 
 
 
