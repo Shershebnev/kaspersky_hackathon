@@ -243,7 +243,7 @@ print("Loading test data and making predictions")
 if not os.path.isdir(predictions_dir):
     os.mkdir(predictions_dir)
 filetags = parse_test_data(test_dir)
-for filetag in filetags:
+for filetag in sorted(filetags, key = lambda x: int(x[:2])):
     start = time.time()
     print("Predicting using test data from {}".format(filetag))
     test_data_path = os.path.join(test_dir, filetag, "{}_{}.csv".format(filetag, tag_label))
