@@ -195,6 +195,32 @@ def convert_time(seconds):
     days, hours = divmod(hours, 24)
     return days, hours, minutes, seconds
 
+def select_best_model(path, pattern, compare_fn):
+    """Selects best model from checkpoints
+
+    Args:
+        path: path to directory with checkpoints
+        pattern: regexp compiled pattern for checkpoint name matching
+        compare_fn: function for checkpoints comparison. Should take two
+            arguments and return 1 if first is better. Args assumed to be floats
+
+    Returns:
+        path to best checkpoint
+    """
+    best_value = None
+    best_checkpoint = ""
+    for checkpoint in [item for item in os.listdir(path) if item.endswith(".h5")]:
+        value = float(pattern.findall(checkpoint)[0])
+        if best_value is None:
+            best_value = value
+            best_checkpoint = checkpoint
+        else:
+            cmp_val = compare_fn(value, best_value)
+            if cmp_val == 1:
+                best_value = value
+                best_checkpoint = checkpoint
+    return opj(path, best_checkpoint)
+
 global_start = time.time()
 train_file = "train.csv"
 if not os.path.isfile(train_file):
@@ -233,8 +259,12 @@ print("Fitting model")
 model = build_model([1, lstm_first, lstm_second, 1])
 model.fit(x_train, y_train, batch_size = batch_size, epochs = epochs,
           validation_split = 0.1, callbacks = callbacks_list, verbose = 2)
-# final save, just in case
-model.save(os.path.join(checkpoints_dir, "{}_final.h5".format(tag_label)))
+
+print("Loading best model")
+pattern = re.compile("epoch_\d\d_val_loss_(\d+\.\d+).h5")
+compare_fn = lambda x, y: 1 if x < y else 0
+best_chkp = select_best_model(checkpoints_dir, pattern, compare_fn)
+model = load_model(best_chkp)
 
 print("Testing using validation set")
 predicted = predict(model, x_validation)
